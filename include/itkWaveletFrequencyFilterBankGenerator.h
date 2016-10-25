@@ -20,7 +20,7 @@
 
 #include <itkImageRegionIterator.h>
 #include <complex>
-#include <itkGenerateImageSource.h>
+#include <itkWaveletFrequencyPyramid.h>
 #include <itkFrequencyImageRegionIteratorWithIndex.h>
 
 namespace itk
@@ -48,28 +48,28 @@ template <typename TOutputImage,
           typename TWaveletFunction,
           typename TFrequencyRegionIterator = FrequencyImageRegionIteratorWithIndex< TOutputImage> >
 class WaveletFrequencyFilterBankGenerator
-: public itk::GenerateImageSource< TOutputImage >
+: public itk::WaveletFrequencyPyramid< TOutputImage, TOutputImage>
 {
 public:
   /** Standard typedefs */
-  typedef WaveletFrequencyFilterBankGenerator    Self;
-  typedef itk::GenerateImageSource<TOutputImage> Superclass;
-  typedef itk::SmartPointer<Self>                Pointer;
-  typedef itk::SmartPointer<const Self>          ConstPointer;
+  typedef WaveletFrequencyFilterBankGenerator                      Self;
+  typedef itk::WaveletFrequencyPyramid<TOutputImage, TOutputImage> Superclass;
+  typedef itk::SmartPointer<Self>                                  Pointer;
+  typedef itk::SmartPointer<const Self>                            ConstPointer;
 
   /** Type macro */
   itkNewMacro(Self);
 
   /** Creation through object factory macro */
-  itkTypeMacro(WaveletFrequencyFilterBankGenerator, GenerateImageSourceFilter);
+  itkTypeMacro(WaveletFrequencyFilterBankGenerator, WaveletFrequencyPyramid);
 
   /** Inherit types from Superclass. */
-  typedef typename Superclass::OutputImageType               OutputImageType;
-  typedef typename Superclass::OutputImagePointer            OutputImagePointer;
+  typedef typename Superclass::OutputImageType        OutputImageType;
+  typedef typename Superclass::OutputImagePointer     OutputImagePointer;
+
   /** Basic typedefs */
-  // typedef typename itk::ImageRegionIterator<OutputImageType> OutputRegionIterator;
+  typedef typename OutputImageType::RegionType OutputImageRegionType;
   typedef TFrequencyRegionIterator                           OutputRegionIterator;
-  typedef typename OutputImageType::RegionType               OutputImageRegionType;
   /** WaveletFunction types */
   typedef TWaveletFunction                                   WaveletFunctionType;
   typedef typename WaveletFunctionType::FunctionValueType    FunctionValueType;
@@ -78,21 +78,9 @@ public:
   itkStaticConstMacro(ImageDimension, unsigned int, TOutputImage::ImageDimension);
 
   /** Getters/Setters */
-  itkGetMacro(HighPassSubBands, unsigned int);
-  void SetHighPassSubBands(unsigned int k);
-  itkGetMacro(ScaleFactor, unsigned int);
-  itkSetMacro(ScaleFactor, unsigned int);
   itkGetMacro(InverseBank, bool);
   itkSetMacro(InverseBank, bool);
   void SetInverseBankOn();
-  /** Get Outputs *****/
-  OutputImagePointer GetOutputLowPass();
-  OutputImagePointer GetOutputHighPass();
-  OutputImagePointer GetOutputSubBand(unsigned int k);
-  /** Returns all the outputs, starting at low-pass to highest subband*/
-  std::vector<OutputImagePointer> GetOutputsAll();
-  /** Returns all the high pass subbands in ascending order, but not the low pass*/
-  std::vector<OutputImagePointer> GetOutputsHighPassBands();
 
 #ifdef ITK_USE_CONCEPT_CHECKING
  /// This ensure that OutputPixelType is complex<float||double>
@@ -113,14 +101,10 @@ private:
   void operator=(const Self&) ITK_DELETE_FUNCTION;
 
   /************ Data Members *************/
-  /** Number of M-Bands decomposition of the high pass filters */
-  unsigned int m_HighPassSubBands;
-  /** Scale Factor, defaults to 1, used optionally to dilate the filter bank in
-   * a multiresolution (multi-level) analysis. */
-  unsigned int m_ScaleFactor;
   /** Flag to call generate inverse(reconstruction) filter bank instead
    * of forward (analysis) */
   bool m_InverseBank;
+  typename TWaveletFunction::Pointer m_Evaluator;
 
 }; // end of class
 } // end namespace itk
